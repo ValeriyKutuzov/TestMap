@@ -19,19 +19,13 @@ enum LocationFields: String {
 
 class DataManager: NSObject {
     
-    var appDelegate: AppDelegate
-    
-    var context: NSManagedObjectContext
+    var context: NSManagedObjectContext!
     
     var dateFormatter: DateFormatter
     
     static let shared = DataManager()
     
     override init() {
-        appDelegate = UIApplication.shared.delegate as! AppDelegate
-        
-        context = appDelegate.persistentContainer.viewContext
-        
         dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
@@ -39,12 +33,18 @@ class DataManager: NSObject {
 }
 
 extension DataManager {
-    func getContext() -> NSManagedObjectContext {
-        return context
-    }
     
     func saveContext() {
-        appDelegate.saveContext()
+        if context.hasChanges {
+            do {
+                try context.save()
+            } catch {
+                // Replace this implementation with code to handle the error appropriately.
+                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                let nserror = error as NSError
+                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+            }
+        }
     }
     
     func setRefreshDate(_ dateString: String) {

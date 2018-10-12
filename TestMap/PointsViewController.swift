@@ -9,9 +9,7 @@
 import UIKit
 import CoreData
 
-class PointsViewController: UITableViewController {
-    
-    var locations: [LocationsBasic] = []
+class PointsViewController: UITableViewController, NSFetchedResultsControllerDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,15 +19,9 @@ class PointsViewController: UITableViewController {
                 if !result {
                     self.showAlert()
                 }
-                self.loadLocations()
             }
         })
         // Do any additional setup after loading the view, typically from a nib.
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        loadLocations()
     }
     
     func showAlert() {
@@ -39,11 +31,6 @@ class PointsViewController: UITableViewController {
             self.present(alert, animated: true, completion: nil)
         })
     }
-    
-    func loadLocations() {
-        self.locations = DataManager.shared.getLocations()
-        self.tableView.reloadData()
-    }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -51,25 +38,68 @@ class PointsViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "Default") else {
-            let cell = UITableViewCell.init()
-            return cell
-        }
-        cell.textLabel?.text = locations[indexPath.row].name
-        cell.detailTextLabel?.text = locations[indexPath.row].notes
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Default", for: indexPath)
+        let event = fetchedResultsController.object(at: indexPath)
+        configureCell(cell, withEvent: event)
+        
         return cell
     }
     
+    func configureCell(_ cell: UITableViewCell, withEvent event: LocationsBasic) {
+        cell.textLabel?.text = event.name
+        cell.detailTextLabel?.text = event.notes
+    }
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return locations.count
+        let sectionInfo = fetchedResultsController.sections![section]
+        return sectionInfo.numberOfObjects
+    }
+    
+    var fetchedResultsController: NSFetchedResultsController<LocationsBasic> {
+        if _fetchedResultsController != nil {
+            return _fetchedResultsController!
+        }
+        
+        let fetchRequest = NSFetchRequest<LocationsBasic>(entityName: kLocationBasicEntity)
+        
+        // Set the batch size to a suitable number.
+        fetchRequest.fetchBatchSize = 20
+        
+        // Edit the sort key as appropriate.
+        let sortDescriptor = NSSortDescriptor(key: "name", ascending: false)
+        
+        fetchRequest.sortDescriptors = [sortDescriptor]
+        
+        // Edit the section name key path and cache name if appropriate.
+        // nil for section name key path means "no sections".
+        let aFetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: DataManager.shared.context, sectionNameKeyPath: nil, cacheName: "Master")
+        aFetchedResultsController.delegate = self
+        _fetchedResultsController = aFetchedResultsController
+        
+        do {
+            try _fetchedResultsController!.performFetch()
+        } catch {
+            // Replace this implementation with code to handle the error appropriately.
+            // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+            let nserror = error as NSError
+            fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+        }
+        
+        return _fetchedResultsController!
+    }
+    
+    var _fetchedResultsController: NSFetchedResultsController<LocationsBasic>? = nil
+    
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        tableView.reloadData()
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         guard let vc = segue.destination as? MapViewController,
-            let cellName = (sender as? UITableViewCell)?.textLabel?.text,
-            let location = DataManager.shared.findObjectWithPredicate(cellName) as? LocationsBasic else {
+            let indexPath = tableView.indexPathForSelectedRow else {
             return
         }
+        let location = fetchedResultsController.object(at: indexPath)
         vc.selectedCell = location
     }
 

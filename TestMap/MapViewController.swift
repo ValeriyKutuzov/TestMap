@@ -24,7 +24,7 @@ class MapViewController: UIViewController, GMSMapViewDelegate {
     }
     
     func loadMap() {
-        let camera = GMSCameraPosition.camera(withLatitude: selectedCell?.lat ?? basicLocations.first?.lat ?? 0, longitude: selectedCell?.lng ?? basicLocations.first?.lng ?? 0, zoom: 11.0)
+        let camera = GMSCameraPosition.camera(withLatitude: selectedCell?.lat ?? basicLocations.first?.lat ?? 0, longitude: selectedCell?.lng ?? basicLocations.first?.lng ?? 0, zoom: 12.0)
         mapView = GMSMapView.map(withFrame: CGRect.zero, camera: camera)
         mapView?.delegate = self
         view = mapView
