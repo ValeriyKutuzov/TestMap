@@ -8,7 +8,6 @@ target 'TestMap' do
   # Pods for TestMap
 
 	pod 'GoogleMaps'
-  	pod 'GooglePlaces'
 
   target 'TestMapTests' do
     inherit! :search_paths
